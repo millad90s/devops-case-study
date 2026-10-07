@@ -20,6 +20,9 @@
       multi-window burn-rate alerts per service (availability: page + ticket, latency: ticket)
 - [x] SLO dashboards (official Sloth dashboards, patched for the `$Datasource` variable and the
       28d / `4w` period) in the Grafana folder "SLOs"
+- [x] Monitoring the monitoring: Flux controllers scraped via a PodMonitor (port `http-prom`,
+      no Service exists for it). Note: Flux v2.1+ removed `gotk_reconcile_condition`; object
+      readiness now needs kube-state-metrics custom resource state (`gotk_resource_info`)
 
 ## TODO
 
@@ -27,6 +30,8 @@
       (including the `documents` table). Use a PVC instead
 - [ ] NetworkPolicies: by default all pod-to-pod traffic is allowed. Restrict postgres to
       backend-api, and backend-api / ml-api to load-generator and Prometheus
+- [ ] Flux drift detection for HelmReleases (`spec.driftDetection.mode: enabled`): by default
+      manual changes to Helm-managed resources are not reverted. Start with `warn`
 
 ## Issues
 

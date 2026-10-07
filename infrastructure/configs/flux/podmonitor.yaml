@@ -1,0 +1,21 @@
+# Scrape the Flux controllers. They expose metrics on the named port `http-prom` (8080) but
+# there is no Service for it, so a PodMonitor (pods selected directly) is used instead of a
+# ServiceMonitor. Flux's own `allow-scraping` NetworkPolicy already allows port 8080.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: flux-system
+  namespace: flux-system
+spec:
+  selector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values:
+          - helm-controller
+          - kustomize-controller
+          - notification-controller
+          - source-controller
+  podMetricsEndpoints:
+    - port: http-prom
+      interval: 30s
