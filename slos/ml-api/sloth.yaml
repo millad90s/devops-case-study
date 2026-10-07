@@ -1,6 +1,9 @@
-# Sloth input for the ml-api SLOs in openslo.yaml (OpenSLO v1).
-# Sloth v0.16 cannot read openslo/v1, so the same SLIs and targets are expressed here.
-# Regenerate the rules after any change (see ../README.md).
+# SLOs for ml-api, in Sloth format. Sloth generates the Prometheus recording rules and
+# burn-rate alerts from this file (see ../README.md).
+#
+# - Only user traffic on POST /predict counts; probes (/health, /ready) are excluded.
+# - Latency threshold 1s: today 100% of requests finish within 0.5s, but they sit right at
+#   that histogram bucket edge, so 500ms would leave no headroom. 1s is the next bucket.
 apiVersion: sloth.slok.dev/v1
 kind: PrometheusServiceLevel
 metadata:
