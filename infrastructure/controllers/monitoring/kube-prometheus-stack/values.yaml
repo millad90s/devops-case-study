@@ -1,0 +1,66 @@
+# Helm values for kube-prometheus-stack.
+# Delivered to the HelmRelease as a ConfigMap (see kustomization.yaml). Any change to this
+# file changes the ConfigMap name hash, which makes Flux upgrade the release.
+
+# k3s embeds these control-plane components in a single process and does not
+# expose them as scrapeable pods; their targets would permanently show as down.
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
+kubeEtcd:
+  enabled: false
+
+prometheus:
+  prometheusSpec:
+    # Pick up ServiceMonitors/PodMonitors/PrometheusRules from any namespace,
+    # not only those labelled with this Helm release.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+    scrapeConfigSelectorNilUsesHelmValues: false
+    # Persist the TSDB so metrics history survives pod restarts. retentionSize stays below
+    # the volume size to leave room for the WAL and compaction; whichever limit hits first wins.
+    # local-path volumes cannot be expanded, so the size includes headroom.
+    retention: 7d
+    retentionSize: 8GB
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: local-path
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        memory: 2Gi
+
+alertmanager:
+  alertmanagerSpec:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        memory: 128Mi
+
+# No adminPassword here: the chart generates one into the Secret
+# kube-prometheus-stack-grafana, so no credential is stored in Git.
+grafana:
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      searchNamespace: ALL
+      # Put each dashboard into the Grafana folder named by this ConfigMap annotation.
+      folderAnnotation: grafana_folder
+      provider:
+        foldersFromFilesStructure: true
