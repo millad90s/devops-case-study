@@ -29,18 +29,32 @@ kubectl port-forward -n monitoring svc/kube-prometheus-stack-grafana 3000:80
 
 1. **Bootstrap fails with `namespaces "postgres" not found`.** `flux bootstrap` returns before
    Flux has created the app namespaces, and `kubectl wait` fails at once on missing resources.
+
    **Fix:** the script first waits for the Flux `apps` Kustomization to be Ready.
+
 2. **App `endpoint` label overwritten when scraping.** The Prometheus Operator sets its own
    `endpoint` label (the port name) and renames the app's label to `exported_endpoint`, so
-   per-endpoint queries silently return wrong results. **Fix:** `honorLabels: true` in the
-   ServiceMonitors.
+   per-endpoint queries silently return wrong results.
+
+   **Fix:** `honorLabels: true` in the ServiceMonitors.
+
 3. **Every `/process` request returned 500 (`relation "documents" does not exist`).**
    backend-api creates its table at startup, but on a fresh cluster it starts before postgres
    is ready, and it does not retry. Found via the 5xx ratio, `backend_api_db_queries_total{status="error"}`
-   and the postgres logs in Loki; the SLO burn-rate alert fired for it. **Workaround:** restart
-   backend-api once postgres is up. A permanent fix is in the TODO list.
+   and the postgres logs in Loki; the SLO burn-rate alert fired for it.
+
+   **Workaround:** once postgres is up, restart backend-api so it creates the table on startup:
+
+   ```bash
+   kubectl rollout restart deployment/backend-api -n backend-api
+   ```
+
+   A permanent fix (postgres init script + PVC) is in the ToDo list.
+
 4. **`NodeClockNotSynchronising` always firing.** False positive on k3d / Docker Desktop (the
-   clock is synced by the host VM, not by NTP inside the node). **Fix:** disabled in `values.yaml`.
+   clock is synced by the host VM, not by NTP inside the node).
+
+   **Fix:** disabled in `values.yaml`.
 
 ## Monitoring stack
 
