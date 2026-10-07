@@ -75,7 +75,34 @@ kubectl port-forward -n monitoring svc/kube-prometheus-stack-prometheus 9090:909
 | Alerts | SLO burn-rate alerts for symptoms (page on fast burn, ticket on slow burn); `BackendApiDown`, `MlApiDown`, `BackendApiDbQueryErrors`, `MlApiNoPredictions` for causes and blind spots; kube-prometheus-stack defaults for the platform |
 | Resources | CPU/memory requests and memory limits for every monitoring component, sized from observed peak usage: Prometheus 512Mi / 2Gi, Loki 256Mi / 1Gi, Grafana 512Mi / 1Gi (it runs at ~600Mi), Alloy 128Mi / 512Mi, the smaller components 16–64Mi / 64–128Mi. No CPU limits, to avoid throttling |
 
-### Dashboards
+## Monitoring strategy
+
+**Approach:** start from what users experience (errors, latency), then go down to the causes
+(database, predictions, pods). Health-check endpoints (`/health`, `/ready`) are excluded
+everywhere: they are most of the traffic and would hide real errors.
+
+### What we monitor
+
+`*` stands for `backend_api` / `ml_api`; both APIs are monitored the same way.
+
+| Signal | What we look at | Why |
+| --- | --- | --- |
+| Traffic | `*_requests_total`, by endpoint and status | Baseline load; a drop to zero is an outage too |
+| Errors | 5xx ratio on `/process` and `/predict` | The most direct sign of user impact |
+| Latency | p50 / p95 / p99 of `*_request_duration_seconds` | Slow is as bad as down |
+| Database (backend-api) | `backend_api_db_queries_total{status}`, `backend_api_db_connections_active` | DB errors explain backend 5xx |
+| Predictions (ml-api) | `ml_api_predictions_total` vs successful `/predict` requests | Requests without a prediction are a silent failure |
+| Saturation | CPU, memory vs limit, restarts (and `ml_api_memory_bytes`) | Catch resource pressure before an OOMKill |
+| Availability | Ready pods, scrape target `up` | Is the service running at all |
+
+## Dashboard design
+
+- **Symptom to cause, top to bottom:** golden signals first (traffic, errors, latency, ready
+  pods), then dependencies (database, predictions), then resources (CPU, memory, restarts).
+- **The same layout for every service**, so on-call reads any dashboard the same way.
+- **Probes excluded** from traffic, errors and latency, so they don't hide real errors.
+- **Dashboards as code:** JSON in Git, loaded by the Grafana sidecar, one Grafana folder per
+  service. They survive cluster rebuilds and every change is reviewed.
 
 **Backend API**: golden signals at the top (request rate, 5xx ratio, p95 latency, ready pods),
 then database and resources, read top to bottom from symptom to cause.
@@ -96,27 +123,7 @@ after the outage; the burn-rate alerts use the raw request counters, so they did
 
 <img src="screenshots/slo-overview.png" width="900" alt="SLO overview dashboard">
 
-## What we monitor and alert on
-
-**Approach:** start from what users experience (errors, latency), then go down to the causes
-(database, predictions, pods). Health-check endpoints (`/health`, `/ready`) are excluded
-everywhere: they are most of the traffic and would hide real errors.
-
-### What we monitor
-
-`*` stands for `backend_api` / `ml_api`; both APIs are monitored the same way.
-
-| Signal | What we look at | Why |
-| --- | --- | --- |
-| Traffic | `*_requests_total`, by endpoint and status | Baseline load; a drop to zero is an outage too |
-| Errors | 5xx ratio on `/process` and `/predict` | The most direct sign of user impact |
-| Latency | p50 / p95 / p99 of `*_request_duration_seconds` | Slow is as bad as down |
-| Database (backend-api) | `backend_api_db_queries_total{status}`, `backend_api_db_connections_active` | DB errors explain backend 5xx |
-| Predictions (ml-api) | `ml_api_predictions_total` vs successful `/predict` requests | Requests without a prediction are a silent failure |
-| Saturation | CPU, memory vs limit, restarts (and `ml_api_memory_bytes`) | Catch resource pressure before an OOMKill |
-| Availability | Ready pods, scrape target `up` | Is the service running at all |
-
-### What we alert on
+## Alerting approach
 
 | Alert | Fires when | Severity | Why |
 | --- | --- | --- | --- |
