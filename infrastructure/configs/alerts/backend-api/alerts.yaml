@@ -1,0 +1,39 @@
+# Cause and blind-spot alerts for backend-api. User-facing symptoms (errors, latency) are
+# covered by the Sloth SLO burn-rate alerts; platform issues by the kube-prometheus-stack defaults.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: backend-api-alerts
+  namespace: monitoring
+spec:
+  groups:
+    - name: backend-api
+      rules:
+        # If every pod is gone there are no metrics at all, so the SLO alerts see "no data"
+        # and stay silent. `absent()` covers targets that disappeared completely.
+        - alert: BackendApiDown
+          expr: |
+            (sum by (job) (up{job="backend-api"}) == 0)
+            or absent(up{job="backend-api"})
+          for: 2m
+          labels:
+            severity: critical
+            team: backend
+          annotations:
+            summary: "backend-api is down: Prometheus cannot scrape any of its pods."
+            description: "No healthy target for backend-api for 2 minutes. Check the pods and recent events in the backend-api namespace."
+
+        # The cause behind backend-api 5xx: points straight to the database instead of the API.
+        - alert: BackendApiDbQueryErrors
+          expr: |
+            sum(rate(backend_api_db_queries_total{status="error"}[5m]))
+            /
+            sum(rate(backend_api_db_queries_total[5m]))
+            > 0.05
+          for: 5m
+          labels:
+            severity: warning
+            team: backend
+          annotations:
+            summary: "backend-api: {{ $value | humanizePercentage }} of database queries are failing."
+            description: "Check the postgres logs in Loki (e.g. missing table, connection refused)."

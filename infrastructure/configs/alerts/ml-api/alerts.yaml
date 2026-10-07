@@ -1,0 +1,39 @@
+# Cause and blind-spot alerts for ml-api. User-facing symptoms (errors, latency) are
+# covered by the Sloth SLO burn-rate alerts; platform issues by the kube-prometheus-stack defaults.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: ml-api-alerts
+  namespace: monitoring
+spec:
+  groups:
+    - name: ml-api
+      rules:
+        # If every pod is gone there are no metrics at all, so the SLO alerts see "no data"
+        # and stay silent. `absent()` covers targets that disappeared completely.
+        - alert: MlApiDown
+          expr: |
+            (sum by (job) (up{job="ml-api"}) == 0)
+            or absent(up{job="ml-api"})
+          for: 2m
+          labels:
+            severity: critical
+            team: ml
+          annotations:
+            summary: "ml-api is down: Prometheus cannot scrape any of its pods."
+            description: "No healthy target for ml-api for 2 minutes. Check the pods and recent events in the ml-api namespace."
+
+        # Silent failure: /predict succeeds (so the error-rate SLO stays green) but no
+        # predictions are produced.
+        - alert: MlApiNoPredictions
+          expr: |
+            sum(rate(ml_api_requests_total{endpoint="/predict",status=~"2.."}[10m])) > 0
+            and
+            (sum(rate(ml_api_predictions_total[10m])) or vector(0)) == 0
+          for: 10m
+          labels:
+            severity: warning
+            team: ml
+          annotations:
+            summary: "ml-api answers /predict successfully but makes no predictions."
+            description: "Requests succeed but ml_api_predictions_total is not increasing. Check the ML API dashboard and ml-api logs."
