@@ -13,7 +13,7 @@
 oslo validate -f slos/common/openslo.yaml -f slos/backend-api/openslo.yaml -f slos/ml-api/openslo.yaml
 for s in backend-api ml-api; do
   sloth validate -i slos/$s/sloth.yaml
-  sloth generate --default-slo-period=28d -i slos/$s/sloth.yaml -o infrastructure/configs/slos/$s-rules.yaml
+  sloth generate --default-slo-period=28d -i slos/$s/sloth.yaml -o infrastructure/configs/slos/$s/rules.yaml
 done
 ```
 
