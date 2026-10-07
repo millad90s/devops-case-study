@@ -76,14 +76,17 @@ everywhere: they are most of the traffic and would hide real errors.
 
 ### What we monitor
 
-| Signal | backend-api | ml-api | Why |
-| --- | --- | --- | --- |
-| Traffic | `backend_api_requests_total` | `ml_api_requests_total` | Baseline load; a drop to zero is an outage too |
-| Errors | 5xx ratio on `/process` | 5xx ratio on `/predict` | The most direct sign of user impact |
-| Latency | p50/p95/p99 of `backend_api_request_duration_seconds` | p50/p95/p99 of `ml_api_request_duration_seconds` | Slow is as bad as down |
-| Dependency / output | `backend_api_db_queries_total{status}`, `backend_api_db_connections_active` | `ml_api_predictions_total` vs successful requests | Shows *why* things fail: DB errors, or requests that produce no prediction |
-| Saturation | CPU, memory vs limit, restarts | CPU, memory vs limit (`ml_api_memory_bytes` and container), restarts | Catch resource pressure before an OOMKill |
-| Availability | ready pods, scrape target `up` | ready pods, scrape target `up` | Is the service running at all |
+`*` stands for `backend_api` / `ml_api`; both APIs are monitored the same way.
+
+| Signal | What we look at | Why |
+| --- | --- | --- |
+| Traffic | `*_requests_total`, by endpoint and status | Baseline load; a drop to zero is an outage too |
+| Errors | 5xx ratio on `/process` and `/predict` | The most direct sign of user impact |
+| Latency | p50 / p95 / p99 of `*_request_duration_seconds` | Slow is as bad as down |
+| Database (backend-api) | `backend_api_db_queries_total{status}`, `backend_api_db_connections_active` | DB errors explain backend 5xx |
+| Predictions (ml-api) | `ml_api_predictions_total` vs successful `/predict` requests | Requests without a prediction are a silent failure |
+| Saturation | CPU, memory vs limit, restarts (and `ml_api_memory_bytes`) | Catch resource pressure before an OOMKill |
+| Availability | Ready pods, scrape target `up` | Is the service running at all |
 
 ### What we alert on
 
