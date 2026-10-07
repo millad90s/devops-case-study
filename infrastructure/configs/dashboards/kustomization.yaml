@@ -21,3 +21,18 @@ configMapGenerator:
     options:
       annotations:
         grafana_folder: ML API
+  # Official Sloth dashboards (grafana.com 14643 / 14348), patched to use the $Datasource
+  # variable instead of the import-time ${DS_PROMETHEUS} placeholder, and the 4w (28d)
+  # SLO period our rules are generated with instead of 30d.
+  - name: dashboard-slo-overview
+    files:
+      - slo/slo-overview.json
+    options:
+      annotations:
+        grafana_folder: SLOs
+  - name: dashboard-slo-detail
+    files:
+      - slo/slo-detail.json
+    options:
+      annotations:
+        grafana_folder: SLOs

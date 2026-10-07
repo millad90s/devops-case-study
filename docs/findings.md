@@ -18,6 +18,8 @@
       rolling 28 days, with fast-burn (page) and slow-burn (ticket) alert policies
 - [x] SLO alert rules generated with Sloth (`--default-slo-period=28d`) as PrometheusRules:
       multi-window burn-rate alerts per service (availability: page + ticket, latency: ticket)
+- [x] SLO dashboards (official Sloth dashboards, patched for the `$Datasource` variable and the
+      28d / `4w` period) in the Grafana folder "SLOs"
 
 ## TODO
 
