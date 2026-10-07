@@ -6,6 +6,9 @@ A local k3d cluster managed with GitOps (Flux CD). Flux deploys two Python APIs 
 `ml-api`) with PostgreSQL and a load generator, plus a monitoring stack for metrics, logs,
 dashboards, SLOs and alerts. Every change is made in Git; Flux applies it to the cluster.
 
+Requires `k3d`, `kubectl`, `flux` and a GitHub token with `repo` scope. The first run takes a few
+minutes: the apps only start once the monitoring stack is healthy.
+
 ```bash
 export GITHUB_TOKEN=<token>
 ./bootstrap/bootstrap.sh https://github.com/<user>/devops-case-study main
@@ -13,16 +16,20 @@ export GITHUB_TOKEN=<token>
 
 | Path | Contents |
 | --- | --- |
+| `bootstrap/` | Cluster creation and Flux bootstrap script |
+| `clusters/devops-cs/` | Flux entry point: `infra-controllers` → `infra-configs` and `apps` |
 | `apps/` | The workloads, plus a ServiceMonitor per API |
 | `infrastructure/controllers/monitoring/` | kube-prometheus-stack, Loki, Alloy (HelmRelease + `values.yaml` each) |
-| `infrastructure/configs/` | Dashboards, SLO rules, alerts, Flux PodMonitor |
+| `infrastructure/configs/` | Dashboards, SLO rules, alerts, Flux PodMonitor (one folder per app) |
 | `slos/` | SLO definitions (Sloth), see [slos/README.md](slos/README.md) |
+| `screenshots/` | Dashboard screenshots used below |
 
 Access (Grafana user `admin`, password generated into a Secret):
 
 ```bash
 kubectl get secret -n monitoring kube-prometheus-stack-grafana -o jsonpath='{.data.admin-password}' | base64 -d
 kubectl port-forward -n monitoring svc/kube-prometheus-stack-grafana 3000:80
+kubectl port-forward -n monitoring svc/kube-prometheus-stack-prometheus 9090:9090
 ```
 
 ## Found issues
@@ -63,10 +70,10 @@ kubectl port-forward -n monitoring svc/kube-prometheus-stack-grafana 3000:80
 | Metrics | kube-prometheus-stack (chart 92.1.0): Prometheus on a 10Gi PVC (7d / 8GB retention), Alertmanager, Grafana, node-exporter, kube-state-metrics |
 | App scraping | ServiceMonitors for backend-api and ml-api (`/metrics`, 15s); Flux controllers via a PodMonitor |
 | Logs | Loki (single binary, 5Gi, 7d retention) + Alloy shipping all pod logs |
-| Dashboards | Backend API, ML API (golden signals, database / inference, resources), SLO overview and detail, each in its own Grafana folder |
+| Dashboards | Backend API, ML API (golden signals, database / inference, resources), SLO overview and detail; stored as JSON in Git, in the Grafana folders "Backend API", "ML API" and "SLOs" |
 | SLOs | Availability 99.5% non-5xx; latency 99% under 250ms (backend-api) / 1s (ml-api); rolling 28 days. Defined in Sloth, which generates the rules |
 | Alerts | SLO burn-rate alerts for symptoms (page on fast burn, ticket on slow burn); `BackendApiDown`, `MlApiDown`, `BackendApiDbQueryErrors`, `MlApiNoPredictions` for causes and blind spots; kube-prometheus-stack defaults for the platform |
-| Resources | CPU/memory requests and memory limits for every monitoring component, sized from observed peak usage: Prometheus 512Mi / 2Gi, Loki 256Mi / 1Gi, Grafana 512Mi / 1Gi (it runs at ~600Mi), the smaller components 16–128Mi. No CPU limits, to avoid throttling |
+| Resources | CPU/memory requests and memory limits for every monitoring component, sized from observed peak usage: Prometheus 512Mi / 2Gi, Loki 256Mi / 1Gi, Grafana 512Mi / 1Gi (it runs at ~600Mi), Alloy 128Mi / 512Mi, the smaller components 16–64Mi / 64–128Mi. No CPU limits, to avoid throttling |
 
 ### Dashboards
 
@@ -82,8 +89,10 @@ reports (`ml_api_memory_bytes`, currently always 0) against the container's real
 <img src="screenshots/ml-api-dashboard.png" width="900" alt="ML API dashboard">
 
 **SLOs** (official Sloth dashboard): all 4 SLOs with their burn rate and remaining error budget,
-plus how many SLO alerts are firing. The warning alert is `BackendApiAvailabilityBudgetBurn`
-(ticket) for the missing-table outage (issue 3).
+plus how many SLO alerts are firing. The warning alert in the screenshot is
+`BackendApiAvailabilityBudgetBurn` (ticket), caused by the missing-table outage (issue 3). The
+budget still shows 100% because it is calculated from the SLO recording rules, which were deployed
+after the outage; the burn-rate alerts use the raw request counters, so they did see it.
 
 <img src="screenshots/slo-overview.png" width="900" alt="SLO overview dashboard">
 
