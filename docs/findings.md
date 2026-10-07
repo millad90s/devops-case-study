@@ -7,14 +7,19 @@
       kube-state-metrics) via Flux HelmRelease, chart pinned to 92.1.0. Values in
       `values.yaml`; Prometheus on a 10Gi PVC with 7d / 8GB retention; Grafana admin password
       generated into a Secret, not stored in Git
-- [x] NetworkPolicy: postgres only accepts connections from backend-api on 5432 (by default,
-      Kubernetes allows all pod-to-pod traffic)
 - [x] ServiceMonitors for backend-api and ml-api (`/metrics` every 15s), next to each app
       (see finding 2)
 - [x] Dashboards as code: Backend API and ML API (golden signals, database / inference,
       resources), each in its own Grafana folder
 - [x] Logs: Loki (single binary, 5Gi, 7d retention) and Alloy shipping all pod logs to Loki;
       Loki added as a Grafana data source
+
+## TODO
+
+- [ ] Persistent storage for postgres: it uses `emptyDir`, so a pod restart wipes the database
+      (including the `documents` table). Use a PVC instead
+- [ ] NetworkPolicies: by default all pod-to-pod traffic is allowed. Restrict postgres to
+      backend-api, and backend-api / ml-api to load-generator and Prometheus
 
 ## Issues
 
