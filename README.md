@@ -17,14 +17,12 @@ export GITHUB_TOKEN=<token>
 | `infrastructure/controllers/monitoring/` | kube-prometheus-stack, Loki, Alloy (HelmRelease + `values.yaml` each) |
 | `infrastructure/configs/` | Dashboards, SLO rules, alerts, Flux PodMonitor |
 | `slos/` | SLO definitions (Sloth), see [slos/README.md](slos/README.md) |
-| `docs/findings.md` | Detailed progress log |
 
 Access (Grafana user `admin`, password generated into a Secret):
 
 ```bash
 kubectl get secret -n monitoring kube-prometheus-stack-grafana -o jsonpath='{.data.admin-password}' | base64 -d
 kubectl port-forward -n monitoring svc/kube-prometheus-stack-grafana 3000:80
-kubectl port-forward -n monitoring svc/kube-prometheus-stack-prometheus 9090:9090
 ```
 
 ## Found issues
@@ -91,6 +89,11 @@ are warnings, so one incident does not page twice; don't duplicate the default p
 
 - **Postgres schema and storage:** create the `documents` table with an init script and use a PVC
   instead of `emptyDir`, so a postgres restart does not wipe the database (issue 3)
+- **postgres-exporter:** postgres itself is not monitored yet; today we only see it through
+  backend-api's metrics. postgres-exporter would add open connections (`pg_stat_activity`:
+  `backend_api_db_connections_active` only counts connections *in use*, so it shows 0 at this
+  traffic level), database size, locks and `pg_up`, plus alerts for postgres down or too many
+  connections
 - **NetworkPolicies:** all pod-to-pod traffic is allowed by default. Restrict postgres to
   backend-api, and the APIs to load-generator and Prometheus
 - **ResourceQuota for the `monitoring` namespace** to cap its total CPU/memory. Needs a
