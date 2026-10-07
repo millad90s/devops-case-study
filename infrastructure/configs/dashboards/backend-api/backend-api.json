@@ -120,7 +120,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate(backend_api_requests_total{endpoint!~\"/health|/ready\",status=~\"5..\"}[$__rate_interval])) / sum(rate(backend_api_requests_total{endpoint!~\"/health|/ready\"}[$__rate_interval]))"
+          "expr": "(sum(rate(backend_api_requests_total{endpoint!~\"/health|/ready\",status=~\"5..\"}[$__rate_interval])) or vector(0)) / sum(rate(backend_api_requests_total{endpoint!~\"/health|/ready\"}[$__rate_interval]))"
         }
       ]
     },

@@ -1,0 +1,59 @@
+# Sloth input for the ml-api SLOs in openslo.yaml (OpenSLO v1).
+# Sloth v0.16 cannot read openslo/v1, so the same SLIs and targets are expressed here.
+# Regenerate the rules after any change (see ../README.md).
+apiVersion: sloth.slok.dev/v1
+kind: PrometheusServiceLevel
+metadata:
+  name: ml-api
+  namespace: monitoring
+spec:
+  service: ml-api
+  labels:
+    team: ml
+  slos:
+    - name: predict-availability
+      objective: 99.5
+      description: 99.5% of POST /predict requests do not return a 5xx.
+      sli:
+        events:
+          # `or vector(0)`: with no 5xx since the pods started the series doesn't exist,
+          # and the SLI would be empty instead of 0 errors.
+          errorQuery: (sum(rate(ml_api_requests_total{endpoint="/predict",status=~"5.."}[{{.window}}])) or vector(0))
+          totalQuery: sum(rate(ml_api_requests_total{endpoint="/predict"}[{{.window}}]))
+      alerting:
+        name: MlApiAvailabilityBudgetBurn
+        labels:
+          category: availability
+        annotations:
+          summary: ml-api /predict is burning its availability error budget too fast.
+          runbook: Check the ML API dashboard (errors, requests vs predictions) and ml-api logs in Loki.
+        pageAlert:
+          labels:
+            severity: critical
+        ticketAlert:
+          labels:
+            severity: warning
+
+    - name: predict-latency
+      objective: 99
+      description: 99% of POST /predict requests complete within 1s.
+      sli:
+        events:
+          # "Bad" events are requests slower than 1s: total minus the le=1.0 bucket.
+          errorQuery: |
+            sum(rate(ml_api_request_duration_seconds_count{endpoint="/predict"}[{{.window}}]))
+            -
+            sum(rate(ml_api_request_duration_seconds_bucket{endpoint="/predict",le="1.0"}[{{.window}}]))
+          totalQuery: sum(rate(ml_api_request_duration_seconds_count{endpoint="/predict"}[{{.window}}]))
+      alerting:
+        name: MlApiLatencyBudgetBurn
+        labels:
+          category: latency
+        annotations:
+          summary: ml-api /predict is burning its latency error budget too fast.
+          runbook: Check the ML API dashboard (latency, CPU, memory) for saturation.
+        pageAlert:
+          disable: true
+        ticketAlert:
+          labels:
+            severity: warning

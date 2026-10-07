@@ -13,6 +13,11 @@
       resources), each in its own Grafana folder
 - [x] Logs: Loki (single binary, 5Gi, 7d retention) and Alloy shipping all pod logs to Loki;
       Loki added as a Grafana data source
+- [x] SLOs defined in OpenSLO v1 (`slos/`), validated with `oslo validate`: availability
+      (99.5% non-5xx) and latency (99% under 250ms for backend-api, under 1s for ml-api) over a
+      rolling 28 days, with fast-burn (page) and slow-burn (ticket) alert policies
+- [x] SLO alert rules generated with Sloth (`--default-slo-period=28d`) as PrometheusRules:
+      multi-window burn-rate alerts per service (availability: page + ticket, latency: ticket)
 
 ## TODO
 
