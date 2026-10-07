@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ml-api
+  namespace: ml-api
+  labels:
+    app: ml-api
+spec:
+  selector:
+    matchLabels:
+      app: ml-api
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      # The app exposes its own `endpoint` label (/predict, /health, ...); without this
+      # Prometheus renames it to `exported_endpoint` in favour of the target's port name.
+      honorLabels: true

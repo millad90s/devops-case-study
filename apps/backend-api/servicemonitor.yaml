@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: backend-api
+  namespace: backend-api
+  labels:
+    app: backend-api
+spec:
+  selector:
+    matchLabels:
+      app: backend-api
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      # The app exposes its own `endpoint` label (/process, /health, ...); without this
+      # Prometheus renames it to `exported_endpoint` in favour of the target's port name.
+      honorLabels: true

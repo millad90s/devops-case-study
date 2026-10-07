@@ -9,6 +9,8 @@
       generated into a Secret, not stored in Git
 - [x] NetworkPolicy: postgres only accepts connections from backend-api on 5432 (by default,
       Kubernetes allows all pod-to-pod traffic)
+- [x] ServiceMonitors for backend-api and ml-api (`/metrics` every 15s), next to each app
+      (see finding 2)
 
 ## Issues
 
@@ -19,3 +21,12 @@
 
 **Fix:** `bootstrap.sh` first waits for the Flux `apps` Kustomization to be Ready, then for the
 Deployments.
+
+### 2. App `endpoint` label is overwritten when scraping
+
+**Problem:** the apps label requests with `endpoint` (`/process`, `/health`, ...), but the
+Prometheus Operator also sets `endpoint` on every target (the port name, `http`). Prometheus keeps
+its own value and renames the app's label to `exported_endpoint`, so queries filtering on
+`endpoint` silently return wrong results.
+
+**Fix:** `honorLabels: true` in the ServiceMonitors, so the app's labels win.
