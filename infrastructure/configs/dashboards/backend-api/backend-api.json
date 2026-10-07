@@ -356,7 +356,7 @@
     },
     {
       "type": "timeseries",
-      "title": "Active DB connections by pod",
+      "title": "DB connections in use by pod",
       "id": 10,
       "datasource": {
         "type": "prometheus",
@@ -387,7 +387,8 @@
           "expr": "sum by (pod) (backend_api_db_connections_active)",
           "legendFormat": "{{pod}}"
         }
-      ]
+      ],
+      "description": "Connections checked out of the pool for a query right now, not open connections. Queries take a few ms, so at low traffic this is usually 0. Useful under load to spot pool saturation."
     },
     {
       "type": "row",

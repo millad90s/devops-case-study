@@ -68,6 +68,19 @@ kubectl port-forward -n monitoring svc/kube-prometheus-stack-grafana 3000:80
 | Alerts | SLO burn-rate alerts for symptoms (page on fast burn, ticket on slow burn); `BackendApiDown`, `MlApiDown`, `BackendApiDbQueryErrors`, `MlApiNoPredictions` for causes and blind spots; kube-prometheus-stack defaults for the platform |
 | Resources | CPU/memory requests and memory limits for every monitoring component, sized from observed peak usage: Prometheus 512Mi / 2Gi, Loki 256Mi / 1Gi, Grafana 512Mi / 1Gi (it runs at ~600Mi), the smaller components 16–128Mi. No CPU limits, to avoid throttling |
 
+### Dashboards
+
+**Backend API**: golden signals at the top (request rate, 5xx ratio, p95 latency, ready pods),
+then database and resources, read top to bottom from symptom to cause.
+
+<img src="screenshots/backend-api-dashboard.png" width="900" alt="Backend API dashboard">
+
+**ML API**: the same golden signals, then inference (successful `/predict` requests vs
+predictions; the two lines should overlap, a gap means a silent failure) and memory: what the app
+reports (`ml_api_memory_bytes`, currently always 0) against the container's real usage and limit.
+
+<img src="screenshots/ml-api-dashboard.png" width="900" alt="ML API dashboard">
+
 ## What we monitor and alert on
 
 **Approach:** start from what users experience (errors, latency), then go down to the causes
