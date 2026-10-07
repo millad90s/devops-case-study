@@ -51,9 +51,47 @@ alertmanager:
       limits:
         memory: 128Mi
 
+# Requests/limits below are sized from observed peak usage (container_memory_working_set_bytes
+# and CPU rate over the first 2h) with headroom. No CPU limits: they cause throttling even
+# when the node has spare CPU; a CPU request plus a memory limit is enough.
+
+# Peak 25Mi / 14m.
+prometheusOperator:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      memory: 128Mi
+
+# Peak 25Mi / 5m.
+kube-state-metrics:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      memory: 128Mi
+
+# Peak 12Mi / 3m.
+prometheus-node-exporter:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 16Mi
+    limits:
+      memory: 64Mi
+
 # No adminPassword here: the chart generates one into the Secret
 # kube-prometheus-stack-grafana, so no credential is stored in Git.
 grafana:
+  # Steady ~550-600Mi, peak 705Mi (grows with the number of dashboards).
+  resources:
+    requests:
+      cpu: 50m
+      memory: 512Mi
+    limits:
+      memory: 1Gi
   sidecar:
     dashboards:
       enabled: true

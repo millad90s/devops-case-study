@@ -23,6 +23,8 @@
 - [x] Monitoring the monitoring: Flux controllers scraped via a PodMonitor (port `http-prom`,
       no Service exists for it). Note: Flux v2.1+ removed `gotk_reconcile_condition`; object
       readiness now needs kube-state-metrics custom resource state (`gotk_resource_info`)
+- [x] Requests/limits for every monitoring component, sized from observed peak usage
+      (Grafana runs at ~600Mi, so it got a 1Gi limit). Memory limits only, no CPU limits
 
 ## TODO
 
