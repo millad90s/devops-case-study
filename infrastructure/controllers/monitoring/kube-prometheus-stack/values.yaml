@@ -13,6 +13,12 @@ kubeProxy:
 kubeEtcd:
   enabled: false
 
+defaultRules:
+  disabled:
+    # False positive on k3d / Docker Desktop: the node container's clock is synced by the
+    # host VM, not by NTP inside Linux, so node-exporter always reports "not synchronised".
+    NodeClockNotSynchronising: true
+
 prometheus:
   prometheusSpec:
     # Pick up ServiceMonitors/PodMonitors/PrometheusRules from any namespace,

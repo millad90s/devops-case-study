@@ -18,6 +18,10 @@
       Sloth generates the PrometheusRules: multi-window burn-rate alerts (availability: page +
       ticket, latency: ticket). OpenSLO was considered but dropped: Sloth cannot read
       `openslo/v1` (and generates no alerts from v1alpha), so it only added a duplicate file
+- [x] Cause and blind-spot alerts (`infrastructure/configs/alerts/`): `AppDown` (all pods gone,
+      where the SLO alerts would only see "no data"), `BackendApiDbQueryErrors`,
+      `MlApiNoPredictions` (silent failure). `NodeClockNotSynchronising` disabled: false
+      positive on k3d / Docker Desktop
 - [x] SLO dashboards (official Sloth dashboards, patched for the `$Datasource` variable and the
       28d / `4w` period) in the Grafana folder "SLOs"
 - [x] Monitoring the monitoring: Flux controllers scraped via a PodMonitor (port `http-prom`,
