@@ -11,6 +11,10 @@
       Kubernetes allows all pod-to-pod traffic)
 - [x] ServiceMonitors for backend-api and ml-api (`/metrics` every 15s), next to each app
       (see finding 2)
+- [x] Dashboards as code: Backend API and ML API (golden signals, database / inference,
+      resources), each in its own Grafana folder
+- [x] Logs: Loki (single binary, 5Gi, 7d retention) and Alloy shipping all pod logs to Loki;
+      Loki added as a Grafana data source
 
 ## Issues
 
