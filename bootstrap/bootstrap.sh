@@ -103,6 +103,10 @@ flux bootstrap github \
 # --- Wait for workloads ---
 echo ""
 echo "--- Waiting for workloads to be deployed ---"
+# flux bootstrap returns before Flux has created the app namespaces, and `kubectl wait`
+# fails immediately on resources that don't exist yet. The Flux apps Kustomization does
+# exist at this point; with `wait: true` it only turns Ready once its workloads are healthy.
+kubectl wait --for=condition=Ready kustomization/apps -n flux-system --timeout=10m
 kubectl wait --for=condition=Available deployment/postgres -n postgres --timeout=180s
 kubectl wait --for=condition=Available deployment/ml-api -n ml-api --timeout=180s
 kubectl wait --for=condition=Available deployment/backend-api -n backend-api --timeout=180s
