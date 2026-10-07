@@ -81,6 +81,12 @@ reports (`ml_api_memory_bytes`, currently always 0) against the container's real
 
 <img src="screenshots/ml-api-dashboard.png" width="900" alt="ML API dashboard">
 
+**SLOs** (official Sloth dashboard): all 4 SLOs with their burn rate and remaining error budget,
+plus how many SLO alerts are firing. The warning alert is `BackendApiAvailabilityBudgetBurn`
+(ticket) for the missing-table outage (issue 3).
+
+<img src="screenshots/slo-overview.png" width="900" alt="SLO overview dashboard">
+
 ## What we monitor and alert on
 
 **Approach:** start from what users experience (errors, latency), then go down to the causes

@@ -703,7 +703,7 @@
         "type": "prometheus",
         "uid": "${Datasource}"
       },
-      "description": "A rolling window of the total period (30d) error budget remaining.",
+      "description": "A rolling window of the total period (28d) error budget remaining.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -762,7 +762,7 @@
           "expr": "slo:period_error_budget_remaining:ratio{sloth_service=\"${service}\", sloth_slo=\"${slo}\"} or on() vector(1)",
           "instant": true,
           "interval": "",
-          "legendFormat": "Remaining error budget (30d window)",
+          "legendFormat": "Remaining error budget (28d window)",
           "queryType": "randomWalk",
           "refId": "A"
         }

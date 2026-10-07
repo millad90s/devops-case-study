@@ -728,7 +728,7 @@
           "refId": "A"
         }
       ],
-      "title": "Budget remaining 30 day window",
+      "title": "Budget remaining 28 day window",
       "transformations": [],
       "type": "bargauge"
     }
